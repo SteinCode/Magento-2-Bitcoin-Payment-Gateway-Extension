@@ -9,10 +9,10 @@ use Spectrocoin\Merchant\Library\SCMerchantClient\Message\SpectroCoin_CreateOrde
 use Spectrocoin\Merchant\Library\SCMerchantClient\Message\SpectroCoin_CreateOrderResponse;
 use Spectrocoin\Merchant\Library\SCMerchantClient\Data\SpectroCoin_ApiError;
 use Spectrocoin\Merchant\Library\SCMerchantClient\Data\SpectroCoin_OrderCallback;
+use Spectrocoin\Merchant\Library\SCMerchantClient\SpectroCoin_AuthHandler;
 
 class SCMerchantClient
 {
-
 	private $merchant_api_url;
 	private $project_id;
 	private $client_id;
@@ -24,6 +24,9 @@ class SCMerchantClient
 	private $public_spectrocoin_cert_location;
 	protected $guzzle_client;
 
+	protected $auth_handler;
+
+
 	/**
 	 * @param $merchant_api_url
 	 * @param $project_id
@@ -33,6 +36,7 @@ class SCMerchantClient
 	 */
 	function __construct($merchant_api_url, $project_id, $client_id, $client_secret, $auth_url)
 	{
+
 		$this->merchant_api_url = $merchant_api_url;
 		$this->project_id = $project_id;
 		$this->client_id = $client_id;
@@ -41,6 +45,8 @@ class SCMerchantClient
 
 		$this->guzzle_client = new Client();
 		$this->public_spectrocoin_cert_location = "https://test.spectrocoin.com/public.pem";
+
+		$this->auth_handler = new SpectroCoin_AuthHandler();
 	}
 
 	/**
@@ -170,7 +176,7 @@ class SCMerchantClient
         $current_time = time();
 		$encrypted_access_token_data = get_transient($this->access_token_transient_key);
 		if ($encrypted_access_token_data) {
-			$access_token_data = (storing logic here)
+			$access_token_data = (getting token logic here)
 			$this->access_token_data = $access_token_data;
 			if ($this->spectrocoin_is_token_valid($current_time)) {
 				return $this->access_token_data;
@@ -205,7 +211,7 @@ class SCMerchantClient
 			$data['expires_at'] = $current_time + $data['expires_in'];
 			$encrypted_access_token_data = SpectroCoin_Utilities::spectrocoin_encrypt_auth_data(json_encode($data), $this->encryption_key);
 	
-			(setting the access token logic here)
+			(storing token logic here)
 	
 			$this->access_token_data = $data;
 			return $this->access_token_data;
