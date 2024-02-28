@@ -20,7 +20,6 @@ class SCMerchantClient
 	private $auth_url;
 	
 	private $access_token_data;
-	private $encryption_key;
 	private $access_token_transient_key;
 	private $public_spectrocoin_cert_location;
 	protected $guzzle_client;
@@ -41,8 +40,6 @@ class SCMerchantClient
 		$this->auth_url = $auth_url;
 
 		$this->guzzle_client = new Client();
-		$this->encryption_key = hash('sha256', AUTH_KEY . SECURE_AUTH_KEY . LOGGED_IN_KEY . NONCE_KEY);
-		$this->access_token_transient_key = "spectrocoin_transient_key";
 		$this->public_spectrocoin_cert_location = "https://test.spectrocoin.com/public.pem";
 	}
 
@@ -173,7 +170,7 @@ class SCMerchantClient
         $current_time = time();
 		$encrypted_access_token_data = get_transient($this->access_token_transient_key);
 		if ($encrypted_access_token_data) {
-			$access_token_data = json_decode(SpectroCoin_Utilities::spectrocoin_decrypt_auth_data($encrypted_access_token_data, $this->encryption_key), true);
+			$access_token_data = (storing logic here)
 			$this->access_token_data = $access_token_data;
 			if ($this->spectrocoin_is_token_valid($current_time)) {
 				return $this->access_token_data;
@@ -205,12 +202,10 @@ class SCMerchantClient
 				return new SpectroCoin_ApiError('Invalid access token response', 'No valid response received.');
 			}
 	
-			delete_transient($this->access_token_transient_key);
-	
 			$data['expires_at'] = $current_time + $data['expires_in'];
 			$encrypted_access_token_data = SpectroCoin_Utilities::spectrocoin_encrypt_auth_data(json_encode($data), $this->encryption_key);
 	
-			set_transient($this->access_token_transient_key, $encrypted_access_token_data, $data['expires_in']);
+			(setting the access token logic here)
 	
 			$this->access_token_data = $data;
 			return $this->access_token_data;
@@ -239,19 +234,19 @@ class SCMerchantClient
      */
     private function spectrocoin_sanitize_create_order_payload($payload) {
 		$sanitized_payload = [
-			'orderId' => sanitize_text_field($payload['orderId']),
-			'projectId' => sanitize_text_field($payload['projectId']), // Assuming you need to sanitize this as well
-			'description' => sanitize_text_field($payload['description']),
-			'payAmount' => filter_var($payload['payAmount'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
-			'payCurrencyCode' => sanitize_text_field($payload['payCurrencyCode']),
-			'receiveAmount' => filter_var($payload['receiveAmount'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
-			'receiveCurrencyCode' => sanitize_text_field($payload['receiveCurrencyCode']),
-			'callbackUrl' => filter_var($payload['callbackUrl'], FILTER_SANITIZE_URL),
-			'successUrl' => filter_var($payload['successUrl'], FILTER_SANITIZE_URL),
-			'failureUrl' => filter_var($payload['failureUrl'], FILTER_SANITIZE_URL),
+			'orderId' => htmlspecialchars(trim($payload['orderId'])), // Removes any HTML tags and trims whitespace
+			'projectId' => htmlspecialchars(trim($payload['projectId'])), // Removes any HTML tags and trims whitespace
+			'description' => htmlspecialchars(trim($payload['description'])), // Removes any HTML tags and trims whitespace
+			'payAmount' => filter_var($payload['payAmount'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION), // Sanitizes to a float
+			'payCurrencyCode' => htmlspecialchars(trim($payload['payCurrencyCode'])), // Removes any HTML tags and trims whitespace
+			'receiveAmount' => filter_var($payload['receiveAmount'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION), // Sanitizes to a float
+			'receiveCurrencyCode' => htmlspecialchars(trim($payload['receiveCurrencyCode'])), // Removes any HTML tags and trims whitespace
+			'callbackUrl' => filter_var($payload['callbackUrl'], FILTER_SANITIZE_URL), // Sanitizes URL
+			'successUrl' => filter_var($payload['successUrl'], FILTER_SANITIZE_URL), // Sanitizes URL
+			'failureUrl' => filter_var($payload['failureUrl'], FILTER_SANITIZE_URL), // Sanitizes URL
 		];
 		return $sanitized_payload;
-    }
+	}
 
     /**
      * Payload data validation for create order

@@ -11,6 +11,7 @@
                 <api_fields>
                     <api_url>https://test.spectrocoin.com/api/public</api_url>
                     <auth_url>https://test.spectrocoin.com/api/public/oauth/token</auth_url>
+                    <auth_token backend_model="Magento\Config\Model\Config\Backend\Encrypted"/>
                 </api_fields>
 
                 <payment_settings>

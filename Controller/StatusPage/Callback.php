@@ -45,7 +45,7 @@ class Callback extends Action {
         $expected_keys = ['userId', 'merchantApiId', 'merchantId', 'apiId', 'orderId', 'payCurrency', 'payAmount', 'receiveCurrency', 'receiveAmount', 'receivedAmount', 'description', 'orderRequestId', 'status', 'sign'];
 
         $post_data = [];
-      
+        // TO-DO: check if the request is POST
         foreach ($expected_keys as $key) {
             if (isset($_REQUEST[$key])) {
                 $post_data[$key] = $_REQUEST[$key];
