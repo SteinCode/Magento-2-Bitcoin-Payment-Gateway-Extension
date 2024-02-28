@@ -2,7 +2,7 @@
 namespace Spectrocoin\Merchant\Controller\StatusPage;
 
 use Spectrocoin\Merchant\Model\Payment as PaymentModel;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Data\OrderCallback;
+use Spectrocoin\Merchant\Library\SCMerchantClient\Data\SpectroCoin_OrderCallback;
 
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
@@ -39,15 +39,24 @@ class Callback extends Action {
 
     /**
      * Default customer account page
-     *
      * @return void
      */
     public function execute() {
-        $orderCallback = $this->client->parseCreateOrderCallback($_REQUEST);
+        $expected_keys = ['userId', 'merchantApiId', 'merchantId', 'apiId', 'orderId', 'payCurrency', 'payAmount', 'receiveCurrency', 'receiveAmount', 'receivedAmount', 'description', 'orderRequestId', 'status', 'sign'];
 
-        if (!is_null($orderCallback)) {
-            $order = $this->order->loadByIncrementId($orderCallback->getOrderId());
-            if ($this->paymentModel->updateOrderStatus($orderCallback, $order)) {
+        $post_data = [];
+      
+        foreach ($expected_keys as $key) {
+            if (isset($_REQUEST[$key])) {
+                $post_data[$key] = $_REQUEST[$key];
+            }
+        }
+
+        $order_callback = $this->client->spectrocoin_process_callback($post_data);
+
+        if (!is_null($order_callback)) {
+            $order = $this->order->loadByIncrementId($order_callback->getOrderId());
+            if ($this->paymentModel->updateOrderStatus($order_callback, $order)) {
                 $this->getResponse()->setBody('*ok*');
             }
             else {

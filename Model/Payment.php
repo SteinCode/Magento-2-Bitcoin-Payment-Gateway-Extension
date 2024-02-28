@@ -28,9 +28,9 @@ class Payment extends AbstractMethod {
     const COINGATE_MAGENTO_VERSION = '1.0.6';
     const CODE = 'spectrocoin_merchant';
     protected $_code = 'spectrocoin_merchant';
-    protected $_isInitializeNeeded = true;
-    protected $urlBuilder;
-    protected $storeManager;
+    // protected $_isInitializeNeeded = true;
+    protected $url_builder;
+    protected $store_manager;
     protected $scClient;
     protected $resolver;
 
@@ -38,15 +38,15 @@ class Payment extends AbstractMethod {
     /**
      * @param Context $context
      * @param Registry $registry
-     * @param ExtensionAttributesFactory $extensionFactory
-     * @param AttributeValueFactory $customAttributeFactory
-     * @param Data $paymentData
-     * @param ScopeConfigInterface $scopeConfig
+     * @param ExtensionAttributesFactory $extension_factory
+     * @param AttributeValueFactory $custom_attribute_factory
+     * @param Data $payment_data
+     * @param ScopeConfigInterface $scope_config
      * @param Logger $logger
-     * @param UrlInterface $urlBuilder
-     * @param StoreManagerInterface $storeManager
+     * @param UrlInterface $url_builder
+     * @param StoreManagerInterface $store_manager
      * @param AbstractResource|null $resource
-     * @param AbstractDb|null $resourceCollection
+     * @param AbstractDb|null $resource_collection
      * @param array $data
      * @internal param ModuleListInterface $moduleList
      * @internal param TimezoneInterface $localeDate
@@ -56,41 +56,40 @@ class Payment extends AbstractMethod {
     public function __construct(
         Context $context,
         Registry $registry,
-        ExtensionAttributesFactory $extensionFactory,
-        AttributeValueFactory $customAttributeFactory,
-        Data $paymentData,
-        ScopeConfigInterface $scopeConfig,
+        ExtensionAttributesFactory $extension_factory,
+        AttributeValueFactory $custom_attribute_factory,
+        Data $payment_data,
+        ScopeConfigInterface $scope_config,
         Logger $logger,
-        UrlInterface $urlBuilder,
-        StoreManagerInterface $storeManager,
+        UrlInterface $url_builder,
+        StoreManagerInterface $store_manager,
         AbstractResource $resource = null,
-        AbstractDb $resourceCollection = null,
+        AbstractDb $resource_collection = null,
         array $data = array()
     ) {
         parent::__construct(
             $context,
             $registry,
-            $extensionFactory,
-            $customAttributeFactory,
-            $paymentData,
-            $scopeConfig,
+            $extension_factory,
+            $custom_attribute_factory,
+            $payment_data,
+            $scope_config,
             $logger,
             $resource,
-            $resourceCollection,
+            $resource_collection,
             $data
         );
 
         $this->scClient = new SCMerchantClient(
             $this->getConfigData('api_fields/api_url'),
+            $this->getConfigData('api_fields/auth_url'),
             $this->getConfigData('api_fields/merchant_id'),
-            $this->getConfigData('api_fields/project_id'),
-            $this->getConfigData('debug_fields/debug_mode') == '1'
+            $this->getConfigData('api_fields/client_id'),
+            $this->getConfigData('api_fields/client_secret'),
         );
 
-        $this->scClient->setPrivateMerchantKey($this->getConfigData('api_fields/private_key'));
-
-        $this->urlBuilder = $urlBuilder;
-        $this->storeManager = $storeManager;
+        $this->url_builder = $url_builder;
+        $this->store_manager = $store_manager;
     }
 
 
@@ -111,9 +110,9 @@ class Payment extends AbstractMethod {
         $receive_currency_code = $order->getOrderCurrencyCode();
         $pay_currency_code = 'BTC';
 
-        $callback_url = $this->urlBuilder->getUrl('spectrocoin/statusPage/callback');
-        $success_url =  $this->urlBuilder->getUrl('checkout/onepage/success');
-        $failure_url =  $this->urlBuilder->getUrl('checkout/onepage/failure');
+        $callback_url = $this->url_builder->getUrl('spectrocoin/statusPage/callback');
+        $success_url =  $this->url_builder->getUrl('checkout/onepage/success');
+        $failure_url =  $this->url_builder->getUrl('checkout/onepage/failure');
         $receive_amount = number_format($order->getGrandTotal(), 2, '.', '');
 
         $description = array();
@@ -131,9 +130,9 @@ class Payment extends AbstractMethod {
         catch (\Exception $e) {
             $locale = 'en';
         }
-        // TO-DO: test, because changed currency from fiat to btc
+        // TO-DO: test, because previously it was parsing only fiat currency, now it parses fiat and btc
         if ($this->getConfigData('payment_settings/order_payment_method') == 'pay') {
-            $orderRequest = new SpectroCoin_CreateOrderRequest(
+            $order_request = new SpectroCoin_CreateOrderRequest(
                 $order_id,
                 $description,
                 $receive_amount,
@@ -147,7 +146,7 @@ class Payment extends AbstractMethod {
             );
         }
         else {
-            $orderRequest = new SpectroCoin_CreateOrderRequest(
+            $order_request = new SpectroCoin_CreateOrderRequest(
                 $order_id,
                 $description,
                 null,
@@ -162,7 +161,7 @@ class Payment extends AbstractMethod {
         }
 
         try {
-            $response = $this->scClient->spectrocoin_create_order($orderRequest);
+            $response = $this->scClient->spectrocoin_create_order($order_request);
         }
         catch (Exception $e) {
             return [
@@ -196,14 +195,14 @@ class Payment extends AbstractMethod {
 
     /**
      * Returns order status from configuration
-     * @param string $configOption
-     * @param string $defaultValue
+     * @param string $config_option
+     * @param string $default_value
      * @return mixed|string
      */
-    protected function getStatusDataOrDefault($configOption, $defaultValue = 'pending') {
-        $data = $this->getConfigData($configOption);
+    protected function getStatusDataOrDefault($config_option, $default_value = 'pending') {
+        $data = $this->getConfigData($config_option);
         if (!$data) {
-            $data = $defaultValue;
+            $data = $default_value;
         }
 
         return $data;
@@ -211,70 +210,70 @@ class Payment extends AbstractMethod {
 
     /**
      * Returns order status mapped to spectrocoin status
-     * @param string $spectrocoinStatus
+     * @param string $spectrocoin_status
      * @return mixed|string
      */
-    protected function getOrderStatus($spectrocoinStatus) {
-        switch($spectrocoinStatus) {
+    protected function getOrderStatus($spectrocoin_status) {
+        switch($spectrocoin_status) {
             case SpectroCoin_OrderStatusEnum::$New:
-                $statusOption = $this->getStatusDataOrDefault(
+                $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_new',
                     'new'
                 );
                 break;
 
             case SpectroCoin_OrderStatusEnum::$Expired:
-                $statusOption = $this->getStatusDataOrDefault(
+                $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_expired',
                     'canceled'
                 );
                 break;
 
             case SpectroCoin_OrderStatusEnum::$Failed:
-                $statusOption = $this->getStatusDataOrDefault(
+                $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_failed',
                     'closed'
                 );
                 break;
 
             case SpectroCoin_OrderStatusEnum::$Paid:
-                $statusOption = $this->getStatusDataOrDefault(
+                $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_paid',
                     'complete'
                 );
                 break;
 
             case SpectroCoin_OrderStatusEnum::$Pending:
-                $statusOption = $this->getStatusDataOrDefault(
+                $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_pending',
                     'pending_payment'
                 );
                 break;
 
             case SpectroCoin_OrderStatusEnum::$Test:
-                $statusOption = $this->getStatusDataOrDefault(
+                $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_test',
                     'payment_review'
                 );
                 break;
 
             default:
-                $statusOption = $this->getStatusDataOrDefault(
+                $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_test',
                     'pending_payment'
                 );
         }
 
-        return $statusOption;
+        return $status_option;
     }
 
     public function updateOrderStatus(SpectroCoin_OrderCallback $callback, Order $order) {
         try {
-            $orderState = $this->getOrderStatus($callback->getStatus());
+            $order_state = $this->getOrderStatus($callback->getStatus());
 
             $order
-                ->setState($orderState, true)
-                ->setStatus($order->getConfig()->getStateDefaultStatus($orderState))
+                ->setState($order_state, true)
+                ->setStatus($order->getConfig()->getStateDefaultStatus($order_state))
                 ->save();
             return true;
         }
