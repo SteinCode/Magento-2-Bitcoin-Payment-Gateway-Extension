@@ -2,12 +2,12 @@
 namespace Spectrocoin\Merchant\Model;
 
 use Braintree\Exception;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Data\OrderCallback;
+use Spectrocoin\Merchant\Library\SCMerchantClient\Data\SpectroCoin_OrderCallback;
 use Spectrocoin\Merchant\Library\SCMerchantClient\SCMerchantClient;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Message\CreateOrderRequest;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Message\CreateOrderResponse;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Data\ApiError;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Data\OrderStatusEnum;
+use Spectrocoin\Merchant\Library\SCMerchantClient\Message\SpectroCoin_CreateOrderRequest;
+use Spectrocoin\Merchant\Library\SCMerchantClient\Message\SpectroCoin_CreateOrderResponse;
+use Spectrocoin\Merchant\Library\SCMerchantClient\Data\SpectroCoin_ApiError;
+use Spectrocoin\Merchant\Library\SCMerchantClient\Data\SpectroCoin_OrderStatusEnum;
 
 use Magento\Framework\Api\AttributeValueFactory;
 use Magento\Framework\Api\ExtensionAttributesFactory;
@@ -107,14 +107,15 @@ class Payment extends AbstractMethod {
      */
     public function getSpectrocoinResponse(Order $order) {
 
-        $orderId = $order->getIncrementId();
-        $currency = $order->getOrderCurrencyCode();
+        $order_id = $order->getIncrementId();
+        $receive_currency_code = $order->getOrderCurrencyCode();
+        $pay_currency_code = 'BTC';
 
 
-        $uriCallback = $this->urlBuilder->getUrl('spectrocoin/statusPage/callback');
-        $uriSuccess =  $this->urlBuilder->getUrl('checkout/onepage/success');
-        $uriFailure =  $this->urlBuilder->getUrl('checkout/onepage/failure');
-        $total = number_format($order->getGrandTotal(), 2, '.', '');
+        $callback_url = $this->urlBuilder->getUrl('spectrocoin/statusPage/callback');
+        $success_url =  $this->urlBuilder->getUrl('checkout/onepage/success');
+        $failure_url =  $this->urlBuilder->getUrl('checkout/onepage/failure');
+        $receive_amount = number_format($order->getGrandTotal(), 2, '.', '');
 
         $description = array();
         foreach ($order->getAllItems() as $item) {
@@ -124,45 +125,45 @@ class Payment extends AbstractMethod {
         $description = implode(', ', $description);
         $description = '';
 
-        // @todo should be loaded via DI, but today it doesn't work
+        // TO-DO: should be loaded via DI, but today it doesn't work
         try {
             $locale = explode('_', \Magento\Framework\App\ObjectManager::getInstance()->get('Magento\Framework\Locale\Resolver')->getLocale())[0];
         }
         catch (\Exception $e) {
             $locale = 'en';
         }
-
+        // TO-DO: test, because changed currency from fiat to btc
         if ($this->getConfigData('payment_settings/order_payment_method') == 'pay') {
-            $orderRequest = new CreateOrderRequest(
-                $orderId,
-                $currency,
-                $total,
-                $currency,
-                null,
+            $orderRequest = new SpectroCoin_CreateOrderRequest(
+                $order_id,
                 $description,
-                $locale,
-                $uriCallback,
-                $uriSuccess,
-                $uriFailure
+                $receive_amount,
+                $receive_currency_code,
+                null,
+                $pay_currency_code,
+                $callback_url,
+                $success_url,
+                $failure_url,
+                $locale
             );
         }
         else {
-            $orderRequest = new CreateOrderRequest(
-                $orderId,
-                $currency,
-                null,
-                $currency,
-                $total,
+            $orderRequest = new SpectroCoin_CreateOrderRequest(
+                $order_id,
                 $description,
-                $locale,
-                $uriCallback,
-                $uriSuccess,
-                $uriFailure
+                null,
+                $receive_currency_code,
+                $receive_amount,
+                $pay_currency_code,
+                $callback_url,
+                $success_url,
+                $failure_url,
+                $locale
             );
         }
 
         try {
-            $response = $this->scClient->createOrder($orderRequest);
+            $response = $this->scClient->spectrocoin_create_order($orderRequest);
         }
         catch (Exception $e) {
             return [
@@ -172,13 +173,13 @@ class Payment extends AbstractMethod {
             ];
         }
 
-        if($response instanceof CreateOrderResponse) {
+        if($response instanceof SpectroCoin_CreateOrderResponse) {
             return [
                 'status' => 'ok',
                 'redirect_url' => $response->getRedirectUrl()
             ];
         }
-        elseif($response instanceof ApiError) {
+        elseif($response instanceof SpectroCoin_ApiError) {
             return [
                 'status' => 'error',
                 'errorCode' => $response->getCode(),
@@ -216,7 +217,7 @@ class Payment extends AbstractMethod {
      */
     protected function getOrderStatus($spectrocoinStatus) {
         switch($spectrocoinStatus) {
-            case OrderStatusEnum::$New:
+            case SpectroCoin_OrderStatusEnum::$New:
                 $statusOption = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_new',
                     'new'
@@ -251,7 +252,7 @@ class Payment extends AbstractMethod {
                 );
                 break;
 
-            case OrderStatusEnum::$Test:
+            case SpectroCoin_OrderStatusEnum::$Test:
                 $statusOption = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_test',
                     'payment_review'
@@ -268,7 +269,7 @@ class Payment extends AbstractMethod {
         return $statusOption;
     }
 
-    public function updateOrderStatus(OrderCallback $callback, Order $order) {
+    public function updateOrderStatus(SpectroCoin_OrderCallback $callback, Order $order) {
         try {
             $orderState = $this->getOrderStatus($callback->getStatus());
 
