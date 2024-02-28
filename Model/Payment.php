@@ -111,7 +111,6 @@ class Payment extends AbstractMethod {
         $receive_currency_code = $order->getOrderCurrencyCode();
         $pay_currency_code = 'BTC';
 
-
         $callback_url = $this->urlBuilder->getUrl('spectrocoin/statusPage/callback');
         $success_url =  $this->urlBuilder->getUrl('checkout/onepage/success');
         $failure_url =  $this->urlBuilder->getUrl('checkout/onepage/failure');
@@ -224,28 +223,28 @@ class Payment extends AbstractMethod {
                 );
                 break;
 
-            case OrderStatusEnum::$Expired:
+            case SpectroCoin_OrderStatusEnum::$Expired:
                 $statusOption = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_expired',
                     'canceled'
                 );
                 break;
 
-            case OrderStatusEnum::$Failed:
+            case SpectroCoin_OrderStatusEnum::$Failed:
                 $statusOption = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_failed',
                     'closed'
                 );
                 break;
 
-            case OrderStatusEnum::$Paid:
+            case SpectroCoin_OrderStatusEnum::$Paid:
                 $statusOption = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_paid',
                     'complete'
                 );
                 break;
 
-            case OrderStatusEnum::$Pending:
+            case SpectroCoin_OrderStatusEnum::$Pending:
                 $statusOption = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_pending',
                     'pending_payment'
