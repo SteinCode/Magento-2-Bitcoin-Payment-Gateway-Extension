@@ -6,10 +6,11 @@
                 <model>Spectrocoin\Merchant\Model\Payment</model>
                 <order_status>pending_payment</order_status>
                 <payment_action>authorize_capture</payment_action>
-                <title>Bitcoin via Spectrocoin</title>
+                <title>SpectroCoin Crypto Currency Payment</title>
 
                 <api_fields>
-                    <api_url>https://spectrocoin.com/api/merchant/1</api_url>
+                    <api_url>https://test.spectrocoin.com/api/public</api_url>
+                    <auth_url>https://test.spectrocoin.com/api/public/oauth/token</auth_url>
                 </api_fields>
 
                 <payment_settings>
@@ -21,10 +22,6 @@
                     <order_status_failed>closed</order_status_failed>
                     <order_status_paid>complete</order_status_paid>
                 </payment_settings>
-
-                <debug_fields>
-                    <debug_mode>0</debug_mode>
-                </debug_fields>
 
             </spectrocoin_merchant>
         </payment>
