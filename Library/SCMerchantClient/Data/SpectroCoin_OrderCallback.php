@@ -83,7 +83,7 @@ class SpectroCoin_OrderCallback
 	/**
 	 * @return mixed
 	 */
-	public function getPayCurrency()
+	public function getPayCurrencyCode()
 	{
 		return $this->payCurrency;
 	}
@@ -99,7 +99,7 @@ class SpectroCoin_OrderCallback
 	/**
 	 * @return mixed
 	 */
-	public function getReceiveCurrency()
+	public function getReceiveCurrencyCode()
 	{
 		return $this->receiveCurrency;
 	}

@@ -301,7 +301,7 @@ class SCMerchantClient
 			$sanitized_data = $this->spectrocoin_sanitize_callback($post_data);
 			$is_valid = $this->spectrocoin_validate_callback($sanitized_data);
 			if ($is_valid) {
-				$order_callback = new SpectroCoin_OrderCallback($sanitized_data['userId'], $sanitized_data['merchantApiId'], $sanitized_data['merchantId'], $sanitized_data['apiId'], $sanitized_data['orderId'], $sanitized_data['payCurrency'], $sanitized_data['payAmount'], $sanitized_data['receiveCurrency'], $sanitized_data['receiveAmount'], $sanitized_data['receivedAmount'], $sanitized_data['description'], $sanitized_data['orderRequestId'], $sanitized_data['status'], $sanitized_data['sign']);
+				$order_callback = new SpectroCoin_OrderCallback($sanitized_data['userId'], $sanitized_data['merchantApiId'], $sanitized_data['merchantId'], $sanitized_data['apiId'], $sanitized_data['orderId'], $sanitized_data['payCurrencyCode'], $sanitized_data['payAmount'], $sanitized_data['receiveCurrencyCode'], $sanitized_data['receiveAmount'], $sanitized_data['receivedAmount'], $sanitized_data['description'], $sanitized_data['orderRequestId'], $sanitized_data['status'], $sanitized_data['sign']);
 				if ($this->spectrocoin_validate_callback_payload($order_callback)) {
 					return $order_callback;
 				}
@@ -323,9 +323,9 @@ class SCMerchantClient
             'merchantId' => sanitize_text_field($post_data['merchantId']),
             'apiId' => sanitize_text_field($post_data['apiId']),
 			'orderId' => sanitize_text_field($post_data['orderId']),
-			'payCurrency' => sanitize_text_field($post_data['payCurrency']),
+			'payCurrencyCode' => sanitize_text_field($post_data['payCurrencyCode']),
 			'payAmount' => filter_var($post_data['payAmount'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
-			'receiveCurrency' => sanitize_text_field($post_data['receiveCurrency']),
+			'receiveCurrencyCode' => sanitize_text_field($post_data['receiveCurrencyCode']),
 			'receiveAmount' => filter_var($post_data['receiveAmount'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
 			'receivedAmount' => filter_var($post_data['receivedAmount'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION),
 			'description' => sanitize_text_field($post_data['description']),
@@ -350,9 +350,9 @@ class SCMerchantClient
             $sanitized_data['merchantId'], 
             $sanitized_data['apiId'],
 			$sanitized_data['orderId'], 
-			$sanitized_data['payCurrency'], 
+			$sanitized_data['payCurrencyCode'], 
 			$sanitized_data['payAmount'], 
-			$sanitized_data['receiveCurrency'], 
+			$sanitized_data['receiveCurrencyCode'], 
 			$sanitized_data['receiveAmount'], 
 			$sanitized_data['receivedAmount'], 
 			$sanitized_data['description'], 
@@ -379,13 +379,13 @@ class SCMerchantClient
                 $is_valid = false;
                 $failed_fields[] = 'apiId is empty.';
             }
-			if (strlen($sanitized_data['payCurrency']) !== 3) {
+			if (strlen($sanitized_data['payCurrencyCode']) !== 3) {
 				$is_valid = false;
-				$failed_fields[] = 'payCurrency is not 3 characters long.';
+				$failed_fields[] = 'payCurrencyCode is not 3 characters long.';
 			}
-			if (strlen($sanitized_data['receiveCurrency']) !== 3) {
+			if (strlen($sanitized_data['receiveCurrencyCode']) !== 3) {
 				$is_valid = false;
-				$failed_fields[] = 'receiveCurrency is not 3 characters long.';
+				$failed_fields[] = 'receiveCurrencyCode is not 3 characters long.';
 			}
 			if (!is_numeric($sanitized_data['payAmount']) || $sanitized_data['payAmount'] <= 0) {
 				$is_valid = false;
@@ -435,9 +435,9 @@ class SCMerchantClient
 				'merchantId' => $order_callback->getMerchantId(),
 				'apiId' => $order_callback->getApiId(),
 				'orderId' => $order_callback->getOrderId(),
-				'payCurrency' => $order_callback->getPayCurrency(),
+				'payCurrencyCode' => $order_callback->getPayCurrencyCode(),
 				'payAmount' => $order_callback->getPayAmount(),
-				'receiveCurrency' => $order_callback->getReceiveCurrency(),
+				'receiveCurrencyCode' => $order_callback->getReceiveCurrencyCode(),
 				'receiveAmount' => $order_callback->getReceiveAmount(),
 				'receivedAmount' => $order_callback->getReceivedAmount(),
 				'description' => $order_callback->getDescription(),
