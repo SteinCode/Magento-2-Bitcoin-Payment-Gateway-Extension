@@ -12,7 +12,12 @@ use Spectrocoin\Merchant\Library\SCMerchantClient\Data\SpectroCoin_OrderCallback
 use Spectrocoin\Merchant\Library\SCMerchantClient\SpectroCoin_AuthHandler;
 
 class SCMerchantClient
-{
+{	
+
+
+
+	private $access_token_config_path = 'spectrocoin/general/access_token';
+
 	private $merchant_api_url;
 	private $project_id;
 	private $client_id;
@@ -20,7 +25,6 @@ class SCMerchantClient
 	private $auth_url;
 	
 	private $access_token_data;
-	private $access_token_transient_key;
 	private $public_spectrocoin_cert_location;
 	protected $guzzle_client;
 
@@ -36,6 +40,11 @@ class SCMerchantClient
 	 */
 	function __construct($merchant_api_url, $project_id, $client_id, $client_secret, $auth_url)
 	{
+		$objectManager = ObjectManager::getInstance();
+		$this->config_writer = $objectManager->get(WriterInterface::class);
+		$this->scope_config = $objectManager->get(ScopeConfigInterface::class);
+		$this->encryptor = $objectManager->get(EncryptorInterface::class);
+		$this->guzzle_client = new Client();
 
 		$this->merchant_api_url = $merchant_api_url;
 		$this->project_id = $project_id;
@@ -43,10 +52,8 @@ class SCMerchantClient
 		$this->client_secret = $client_secret;
 		$this->auth_url = $auth_url;
 
-		$this->guzzle_client = new Client();
-		$this->public_spectrocoin_cert_location = "https://test.spectrocoin.com/public.pem";
 
-		$this->auth_handler = new SpectroCoin_AuthHandler();
+		$this->public_spectrocoin_cert_location = "https://test.spectrocoin.com/public.pem";
 	}
 
 	/**
@@ -165,23 +172,22 @@ class SCMerchantClient
 			return new SpectroCoin_ApiError($e->getCode(), $e->getMessage());
 		}
 	}
-	
+
 	/**
 	 * Retrieves the current access token data, checking if it's still valid based on its expiration time. If the token is expired or not present, it attempts to refresh the token.
 	 * The function uses WordPress transients for token storage, providing a reliable and persistent storage mechanism within WordPress environments.
 	 *
 	 * @return array|null Returns the access token data array if the token is valid or has been refreshed successfully. Returns null if the token is not present and cannot be refreshed.
 	 */
-	private function spectrocoin_get_access_token_data() {
+	public function spectrocoin_get_access_token_data() {
         $current_time = time();
-		$encrypted_access_token_data = get_transient($this->access_token_transient_key);
-		if ($encrypted_access_token_data) {
-			$access_token_data = (getting token logic here)
-			$this->access_token_data = $access_token_data;
-			if ($this->spectrocoin_is_token_valid($current_time)) {
-				return $this->access_token_data;
-			}
-		}
+        $encrypted_access_token_data = $this->scope_config->getValue($this->access_token_config_path);
+        if ($encrypted_access_token_data) {
+            $access_token_data = json_decode($this->encryptor->decrypt($encrypted_access_token_data), true);
+            if ($this->spectrocoin_is_token_valid($current_time)) {
+                return $access_token_data;
+            }
+        }
         return $this->spectrocoin_refresh_access_token($current_time);
     }
 
@@ -193,32 +199,31 @@ class SCMerchantClient
 	 * @return array|null Returns the new access token data if the refresh operation is successful. Returns null if the operation fails due to a network error or invalid response from the server.
 	 * @throws GuzzleException Thrown if there is an error in the HTTP request to the SpectroCoin authorization server.
 	 */
-    private function spectrocoin_refresh_access_token($current_time) {
-		try {
-			$response = $this->guzzle_client->post($this->auth_url, [
-				'form_params' => [
-					'grant_type' => 'client_credentials',
-					'client_id' => $this->client_id,
-					'client_secret' => $this->client_secret,
-				],
-			]);
-	
-			$data = json_decode($response->getBody(), true);
-			if (!isset($data['access_token'], $data['expires_in'])) {
-				return new SpectroCoin_ApiError('Invalid access token response', 'No valid response received.');
-			}
-	
-			$data['expires_at'] = $current_time + $data['expires_in'];
-			$encrypted_access_token_data = SpectroCoin_Utilities::spectrocoin_encrypt_auth_data(json_encode($data), $this->encryption_key);
-	
-			(storing token logic here)
-	
-			$this->access_token_data = $data;
-			return $this->access_token_data;
-		} catch (GuzzleException $e) {
-			return new SpectroCoin_ApiError('Failed to refresh access token', $e->getMessage());
-		}
-	}
+    public function spectrocoin_refresh_access_token($current_time) {
+        try {
+            $response = $this->guzzle_client->post($this->auth_url, [
+                'form_params' => [
+                    'grant_type' => 'client_credentials',
+                    'client_id' => $this->client_id,
+                    'client_secret' => $this->client_secret,
+                ],
+            ]);
+
+            $data = json_decode($response->getBody(), true);
+            if (!isset($data['access_token'], $data['expires_in'])) {
+                return null;
+            }
+
+            $data['expires_at'] = $current_time + $data['expires_in'];
+            $encrypted_access_token_data = $this->encryptor->encrypt(json_encode($data));
+
+            $this->config_writer->save($this->access_token_config_path, $encrypted_access_token_data);
+
+            return $data;
+        } catch (GuzzleException $e) {
+            return null;
+        }
+    }
 
 
 	/**
@@ -227,9 +232,10 @@ class SCMerchantClient
 	 * @param int $current_time The current timestamp, typically obtained using `time()`.
 	 * @return bool Returns true if the token is valid (i.e., not expired), false otherwise.
 	 */
-	private function spectrocoin_is_token_valid($current_time) {
+	public function spectrocoin_is_token_valid($current_time) {
 		return isset($this->access_token_data['expires_at']) && $current_time < $this->access_token_data['expires_at'];
 	}
+	
 
 	// --------------- VALIDATION AND SANITIZATION BEFORE REQUEST -----------------
 
