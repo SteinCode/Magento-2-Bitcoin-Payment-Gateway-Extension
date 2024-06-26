@@ -91,7 +91,7 @@ Go to the plugin file directory and install dependencies:
 
 4. Click on "Bitcoin via Spectrocoin" and fill the form enter your Merchant ID, Project ID and private key.
 
-**INFORMATION**
+## INFORMATION
 
 This plugin has been developed by SpectroCoin.com
 If you need any further support regarding our services you can contact us via:<br />
@@ -101,3 +101,9 @@ Skype: [spectrocoin_merchant](skype:spectrocoin_merchant)<br />
 Web: [https://spectrocoin.com](https://spectrocoin.com)<br />
 Twitter: [@spectrocoin](https://twitter.com/spectrocoin)<br />
 Facebook: [SpectroCoin](https://www.facebook.com/spectrocoin)<br />
+
+## Changelog
+
+### 1.0.0 MAJOR (09/28/2023):
+
+- Changed `VendorName` to "SpectroCoin" and `ModuleName` to "SpectroCoin".
