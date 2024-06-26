@@ -104,6 +104,4 @@ Facebook: [SpectroCoin](https://www.facebook.com/spectrocoin)<br />
 
 ## Changelog
 
-### 1.0.0 MAJOR (09/28/2023):
-
-- Changed `VendorName` to "SpectroCoin" and `ModuleName` to "SpectroCoin".
+### 1.0.0 MAJOR ():
