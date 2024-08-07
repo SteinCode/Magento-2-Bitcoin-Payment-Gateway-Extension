@@ -17,7 +17,6 @@
   ],
   "homepage": "https://spectrocoin.com",
   "require": {
-    "nategood/httpful": "*",
     "guzzlehttp/guzzle": "^7.8"
   },
   "autoload": {
