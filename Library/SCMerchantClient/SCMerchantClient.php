@@ -4,12 +4,12 @@ namespace Spectrocoin\Merchant\Library\SCMerchantClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Component\SpectroCoin_Utilities;
+// use Spectrocoin\Merchant\Library\SCMerchantClient\Component\SpectroCoin_Utilities;
 use Spectrocoin\Merchant\Library\SCMerchantClient\Message\SpectroCoin_CreateOrderRequest;
 use Spectrocoin\Merchant\Library\SCMerchantClient\Message\SpectroCoin_CreateOrderResponse;
 use Spectrocoin\Merchant\Library\SCMerchantClient\Data\SpectroCoin_ApiError;
 use Spectrocoin\Merchant\Library\SCMerchantClient\Data\SpectroCoin_OrderCallback;
-use Spectrocoin\Merchant\Library\SCMerchantClient\SpectroCoin_AuthHandler;
+// use Spectrocoin\Merchant\Library\SCMerchantClient\SpectroCoin_AuthHandler;
 
 class SCMerchantClient
 {	
