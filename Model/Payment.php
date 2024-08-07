@@ -1,13 +1,13 @@
 <?php
 namespace Spectrocoin\Merchant\Model;
 
-use Braintree\Exception;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Data\SpectroCoin_OrderCallback;
 use Spectrocoin\Merchant\Library\SCMerchantClient\SCMerchantClient;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Message\SpectroCoin_CreateOrderRequest;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Message\SpectroCoin_CreateOrderResponse;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Data\SpectroCoin_ApiError;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Data\SpectroCoin_OrderStatusEnum;
+use Spectrocoin\Merchant\Library\SCMerchantClient\Http\CreateOrderRequest;
+use Spectrocoin\Merchant\Library\SCMerchantClient\Http\CreateOrderResponse;
+use Spectrocoin\Merchant\Library\SCMerchantClient\Http\OrderCallback;
+use Spectrocoin\Merchant\Library\SCMerchantClient\Exception\GenericError;
+use Spectrocoin\Merchant\Library\SCMerchantClient\Exception\ApiError;
+use Spectrocoin\Merchant\Library\SCMerchantClient\Enum\OrderStatus;
 
 use Magento\Framework\Api\AttributeValueFactory;
 use Magento\Framework\Api\ExtensionAttributesFactory;
@@ -22,37 +22,18 @@ use Magento\Payment\Model\Method\AbstractMethod;
 use Magento\Payment\Model\Method\Logger;
 use Magento\Sales\Model\Order;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\App\ObjectManager;
 
+use Exception;
 
 class Payment extends AbstractMethod {
-    const COINGATE_MAGENTO_VERSION = '1.0.6';
     const CODE = 'spectrocoin_merchant';
     protected $_code = 'spectrocoin_merchant';
-    // protected $_isInitializeNeeded = true;
     protected $url_builder;
     protected $store_manager;
-    protected $scClient;
+    protected $sc_merchant_client;
     protected $resolver;
 
-
-    /**
-     * @param Context $context
-     * @param Registry $registry
-     * @param ExtensionAttributesFactory $extension_factory
-     * @param AttributeValueFactory $custom_attribute_factory
-     * @param Data $payment_data
-     * @param ScopeConfigInterface $scope_config
-     * @param Logger $logger
-     * @param UrlInterface $url_builder
-     * @param StoreManagerInterface $store_manager
-     * @param AbstractResource|null $resource
-     * @param AbstractDb|null $resource_collection
-     * @param array $data
-     * @internal param ModuleListInterface $moduleList
-     * @internal param TimezoneInterface $localeDate
-     * @internal param CountryFactory $countryFactory
-     * @internal param Http $response
-     */
     public function __construct(
         Context $context,
         Registry $registry,
@@ -80,7 +61,7 @@ class Payment extends AbstractMethod {
             $data
         );
 
-        $this->scClient = new SCMerchantClient(
+        $this->sc_merchant_client = new SCMerchantClient(
             $this->getConfigData('api_fields/api_url'),
             $this->getConfigData('api_fields/auth_url'),
             $this->getConfigData('api_fields/merchant_id'),
@@ -92,12 +73,11 @@ class Payment extends AbstractMethod {
         $this->store_manager = $store_manager;
     }
 
-
     /**
      * @return SCMerchantClient
      */
     public function getSCClient() {
-        return $this->scClient;
+        return $this->sc_merchant_client;
     }
 
     /**
@@ -105,79 +85,31 @@ class Payment extends AbstractMethod {
      * @return array
      */
     public function getSpectrocoinResponse(Order $order) {
-
-        $order_id = $order->getIncrementId();
-        $receive_currency_code = $order->getOrderCurrencyCode();
-        $pay_currency_code = 'BTC';
-
-        $callback_url = $this->url_builder->getUrl('spectrocoin/statusPage/callback');
-        $success_url =  $this->url_builder->getUrl('checkout/onepage/success');
-        $failure_url =  $this->url_builder->getUrl('checkout/onepage/failure');
-        $receive_amount = number_format($order->getGrandTotal(), 2, '.', '');
-
         $description = array();
         foreach ($order->getAllItems() as $item) {
             $description[] = number_format($item->getQtyOrdered(), 0) . ' × ' . $item->getName();
         }
-
         $description = implode(', ', $description);
-        $description = '';
 
-        // TO-DO: should be loaded via DI, but today it doesn't work
-        try {
-            $locale = explode('_', \Magento\Framework\App\ObjectManager::getInstance()->get('Magento\Framework\Locale\Resolver')->getLocale())[0];
-        }
-        catch (\Exception $e) {
-            $locale = 'en';
-        }
-        // TO-DO: test, because previously it was parsing only fiat currency, now it parses fiat and btc
-        if ($this->getConfigData('payment_settings/order_payment_method') == 'pay') {
-            $order_request = new SpectroCoin_CreateOrderRequest(
-                $order_id,
-                $description,
-                $receive_amount,
-                $receive_currency_code,
-                null,
-                $pay_currency_code,
-                $callback_url,
-                $success_url,
-                $failure_url,
-                $locale
-            );
-        }
-        else {
-            $order_request = new SpectroCoin_CreateOrderRequest(
-                $order_id,
-                $description,
-                null,
-                $receive_currency_code,
-                $receive_amount,
-                $pay_currency_code,
-                $callback_url,
-                $success_url,
-                $failure_url,
-                $locale
-            );
-        }
+        $order_data = [
+            'orderId' => $order->getIncrementId(),
+            'description' => $description,
+            'receiveAmount' => number_format($order->getGrandTotal(), 2, '.', ''),
+            'receiveCurrencyCode' => $order->getOrderCurrencyCode(),
+            'callbackUrl' => $this->url_builder->getUrl('spectrocoin/statusPage/callback'),
+            'successUrl' => $this->url_builder->getUrl('checkout/onepage/success'),
+            'failureUrl' => $this->url_builder->getUrl('checkout/onepage/failure'),
+        ];
 
-        try {
-            $response = $this->scClient->spectrocoin_create_order($order_request);
-        }
-        catch (Exception $e) {
-            return [
-                'status' => 'error',
-                'errorCode' => 1,
-                'errorMsg' => 'Error: '.$e->getMessage()
-            ];
-        }
+        $response = $this->sc_merchant_client->createorder($order_data);
 
-        if($response instanceof SpectroCoin_CreateOrderResponse) {
+        if ($response instanceof CreateOrderResponse) {
             return [
                 'status' => 'ok',
                 'redirect_url' => $response->getRedirectUrl()
             ];
         }
-        elseif($response instanceof SpectroCoin_ApiError) {
+        elseif ($response instanceof ApiError || $response instanceof GenericError) {
             return [
                 'status' => 'error',
                 'errorCode' => $response->getCode(),
@@ -188,7 +120,7 @@ class Payment extends AbstractMethod {
             return [
                 'status' => 'error',
                 'errorCode' => 1,
-                'errorMsg' => 'Unknown Spectrocoin error'
+                'errorMsg' => 'Unknown SpectroCoin error'
             ];
         }
     }
@@ -215,59 +147,47 @@ class Payment extends AbstractMethod {
      */
     protected function getOrderStatus($spectrocoin_status) {
         switch($spectrocoin_status) {
-            case SpectroCoin_OrderStatusEnum::$New:
+            case OrderStatus::New->value:
                 $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_new',
                     'new'
                 );
                 break;
-
-            case SpectroCoin_OrderStatusEnum::$Expired:
+            case OrderStatus::Expired->value:
                 $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_expired',
                     'canceled'
                 );
                 break;
-
-            case SpectroCoin_OrderStatusEnum::$Failed:
+            case OrderStatus::Failed->value:
                 $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_failed',
                     'closed'
                 );
                 break;
-
-            case SpectroCoin_OrderStatusEnum::$Paid:
+            case OrderStatus::Paid->value:
                 $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_paid',
                     'complete'
                 );
                 break;
-
-            case SpectroCoin_OrderStatusEnum::$Pending:
+                case OrderStatus::Pending->value:
                 $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_pending',
                     'pending_payment'
                 );
                 break;
 
-            case SpectroCoin_OrderStatusEnum::$Test:
-                $status_option = $this->getStatusDataOrDefault(
-                    'payment_settings/order_status_test',
-                    'payment_review'
-                );
-                break;
-
             default:
                 $status_option = $this->getStatusDataOrDefault(
-                    'payment_settings/order_status_test',
+                    'payment_settings/order_status_pending',
                     'pending_payment'
                 );
         }
-
         return $status_option;
     }
 
-    public function updateOrderStatus(SpectroCoin_OrderCallback $callback, Order $order) {
+    public function updateOrderStatus(OrderCallback $callback, Order $order) {
         try {
             $order_state = $this->getOrderStatus($callback->getStatus());
 
@@ -277,7 +197,7 @@ class Payment extends AbstractMethod {
                 ->save();
             return true;
         }
-        catch (\Exception $e) {
+        catch (Exception $e) {
             exit('Error occurred: ' . $e);
         }
     }

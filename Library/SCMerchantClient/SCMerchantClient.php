@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Spectrocoin\Merchant\Library\SCMerchantClient;
 
 use Spectrocoin\Merchant\Library\SCMerchantClient\Config;
-use Spectrocoin\Merchant\Library\SCMerchantClient\Utils;
 use Spectrocoin\Merchant\Library\SCMerchantClient\Exception\ApiError;
 use Spectrocoin\Merchant\Library\SCMerchantClient\Exception\GenericError;
 use Spectrocoin\Merchant\Library\SCMerchantClient\Http\CreateOrderRequest;
