@@ -1,9 +1,10 @@
 <?php
+declare(strict_types=1);
+
 namespace Spectrocoin\Merchant\Model\Adminhtml\Source;
 
 use Magento\Framework\Option\ArrayInterface;
 use Magento\Sales\Model\Order;
-
 
 class OrderState implements ArrayInterface {
 
@@ -12,7 +13,7 @@ class OrderState implements ArrayInterface {
      *
      * @return array
      */
-    public function toOptionArray()
+    public function toOptionArray(): array
     {
         return [
             [

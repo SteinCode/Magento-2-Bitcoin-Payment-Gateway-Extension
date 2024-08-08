@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Spectrocoin\Merchant\Model\Adminhtml\Source;
 
 use Magento\Framework\Option\ArrayInterface;
@@ -16,7 +18,7 @@ class PaymentMethod implements ArrayInterface
      *
      * @return array
      */
-    public function toOptionArray()
+    public function toOptionArray(): array
     {
         return [
             [
@@ -30,4 +32,3 @@ class PaymentMethod implements ArrayInterface
         ];
     }
 }
-

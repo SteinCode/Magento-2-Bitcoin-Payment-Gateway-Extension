@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Spectrocoin\Merchant\Model;
 
 use Spectrocoin\Merchant\Library\SCMerchantClient\SCMerchantClient;
@@ -29,10 +31,9 @@ use Exception;
 class Payment extends AbstractMethod {
     const CODE = 'spectrocoin_merchant';
     protected $_code = 'spectrocoin_merchant';
-    protected $url_builder;
-    protected $store_manager;
-    protected $sc_merchant_client;
-    protected $resolver;
+    protected UrlInterface $url_builder;
+    protected StoreManagerInterface $store_manager;
+    protected SCMerchantClient $sc_merchant_client;
 
     public function __construct(
         Context $context,
@@ -46,7 +47,7 @@ class Payment extends AbstractMethod {
         StoreManagerInterface $store_manager,
         AbstractResource $resource = null,
         AbstractDb $resource_collection = null,
-        array $data = array()
+        array $data = []
     ) {
         parent::__construct(
             $context,
@@ -62,11 +63,9 @@ class Payment extends AbstractMethod {
         );
 
         $this->sc_merchant_client = new SCMerchantClient(
-            $this->getConfigData('api_fields/api_url'),
-            $this->getConfigData('api_fields/auth_url'),
             $this->getConfigData('api_fields/merchant_id'),
             $this->getConfigData('api_fields/client_id'),
-            $this->getConfigData('api_fields/client_secret'),
+            $this->getConfigData('api_fields/client_secret')
         );
 
         $this->url_builder = $url_builder;
@@ -76,7 +75,7 @@ class Payment extends AbstractMethod {
     /**
      * @return SCMerchantClient
      */
-    public function getSCClient() {
+    public function getSCClient(): SCMerchantClient {
         return $this->sc_merchant_client;
     }
 
@@ -84,17 +83,17 @@ class Payment extends AbstractMethod {
      * @param Order $order
      * @return array
      */
-    public function getSpectrocoinResponse(Order $order) {
-        $description = array();
+    public function getSpectrocoinResponse(Order $order): array {
+        $description = [];
         foreach ($order->getAllItems() as $item) {
-            $description[] = number_format($item->getQtyOrdered(), 0) . ' × ' . $item->getName();
+            $description[] = number_format((float)$item->getQtyOrdered(), 0) . ' × ' . $item->getName();
         }
         $description = implode(', ', $description);
 
         $order_data = [
             'orderId' => $order->getIncrementId(),
             'description' => $description,
-            'receiveAmount' => number_format($order->getGrandTotal(), 2, '.', ''),
+            'receiveAmount' => $order->getGrandTotal(),
             'receiveCurrencyCode' => $order->getOrderCurrencyCode(),
             'callbackUrl' => $this->url_builder->getUrl('spectrocoin/statusPage/callback'),
             'successUrl' => $this->url_builder->getUrl('checkout/onepage/success'),
@@ -108,15 +107,13 @@ class Payment extends AbstractMethod {
                 'status' => 'ok',
                 'redirect_url' => $response->getRedirectUrl()
             ];
-        }
-        elseif ($response instanceof ApiError || $response instanceof GenericError) {
+        } elseif ($response instanceof ApiError || $response instanceof GenericError) {
             return [
                 'status' => 'error',
                 'errorCode' => $response->getCode(),
                 'errorMsg' => $response->getMessage()
             ];
-        }
-        else {
+        } else {
             return [
                 'status' => 'error',
                 'errorCode' => 1,
@@ -129,9 +126,9 @@ class Payment extends AbstractMethod {
      * Returns order status from configuration
      * @param string $config_option
      * @param string $default_value
-     * @return mixed|string
+     * @return string
      */
-    protected function getStatusDataOrDefault($config_option, $default_value = 'pending') {
+    protected function getStatusDataOrDefault(string $config_option, string $default_value = 'pending'): string {
         $data = $this->getConfigData($config_option);
         if (!$data) {
             $data = $default_value;
@@ -143,9 +140,9 @@ class Payment extends AbstractMethod {
     /**
      * Returns order status mapped to spectrocoin status
      * @param string $spectrocoin_status
-     * @return mixed|string
+     * @return string
      */
-    protected function getOrderStatus($spectrocoin_status) {
+    protected function getOrderStatus(string $spectrocoin_status): string {
         switch($spectrocoin_status) {
             case OrderStatus::New->value:
                 $status_option = $this->getStatusDataOrDefault(
@@ -171,13 +168,12 @@ class Payment extends AbstractMethod {
                     'complete'
                 );
                 break;
-                case OrderStatus::Pending->value:
+            case OrderStatus::Pending->value:
                 $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_pending',
                     'pending_payment'
                 );
                 break;
-
             default:
                 $status_option = $this->getStatusDataOrDefault(
                     'payment_settings/order_status_pending',
@@ -187,7 +183,7 @@ class Payment extends AbstractMethod {
         return $status_option;
     }
 
-    public function updateOrderStatus(OrderCallback $callback, Order $order) {
+    public function updateOrderStatus(OrderCallback $callback, Order $order): bool {
         try {
             $order_state = $this->getOrderStatus($callback->getStatus());
 
@@ -196,10 +192,8 @@ class Payment extends AbstractMethod {
                 ->setStatus($order->getConfig()->getStateDefaultStatus($order_state))
                 ->save();
             return true;
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             exit('Error occurred: ' . $e);
         }
     }
-
 }
