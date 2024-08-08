@@ -20,13 +20,6 @@
                         <validate>required-entry</validate>
                     </field>
 
-                    <field id="order_status_test" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0" canRestore="1">
-                        <label>Order Status Test</label>
-                        <source_model>Spectrocoin\Merchant\Model\Adminhtml\Source\OrderState</source_model>
-                        <comment>Order State for Spectrocoin status &quot;Test&quot;</comment>
-                        <validate>required-entry</validate>
-                    </field>
-
                     <field id="order_status_new" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0" canRestore="1">
                         <label>Order Status New</label>
                         <source_model>Spectrocoin\Merchant\Model\Adminhtml\Source\OrderState</source_model>
@@ -100,16 +93,6 @@
                 <group id="api_fields" type="text" translate="label" showInDefault="1" showInWebsite="1" sortOrder="20">
                     <label>API settings</label>
                     <frontend_model>Magento\Config\Block\System\Config\Form\Fieldset</frontend_model>
-
-                    <field id="api_url" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="1" showInStore="0">
-                        <label>Api url</label>
-                        <validate>required-entry</validate>
-                    </field>
-
-                    <field id="auth_url" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="1" showInStore="0">
-                        <label>Auth url</label>
-                        <validate>required-entry</validate>
-                    </field>
 
                     <field id="merchant_id" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="1" showInStore="0">
                         <label>Merchant id</label>
