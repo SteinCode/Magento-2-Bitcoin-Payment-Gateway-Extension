@@ -27,16 +27,6 @@ php bin/magento setup:upgrade
 bin/magento setup:di:compile
 ```
 
-7. Navigate to the plugin file directory and install dependencies:
-
-```bash
-cd app/code/Spectrocoin/Merchant
-```
-
-```bash
-composer install
-```
-
 ## Setting up
 
 1. **[Sign up](https://auth.spectrocoin.com/signup)** for a SpectroCoin Account.
