@@ -1,8 +1,8 @@
 {
-  "name": "spectrocoin/magento2merchant",
+  "name": "spectrocointest/magento2merchanttest",
   "type": "magento2-module",
   "description": "SpectroCoin cryptocurrency payment gateway for Magento2",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "keywords": [
     "bitcoin",
     "btc",
