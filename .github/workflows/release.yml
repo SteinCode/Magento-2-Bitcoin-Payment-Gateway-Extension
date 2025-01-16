@@ -1,4 +1,4 @@
-name: Create tag and release
+name: Create or Update Tag and Release
 
 on:
   workflow_run:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  create_tag_and_release:
+  create_or_update_tag_and_release:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,8 +25,8 @@ jobs:
       - name: Install GitHub CLI
         run: sudo apt-get install gh
 
-      - name: Fetch Latest PR Info and Check for Existing Tag
-        id: check_tag
+      - name: Fetch Latest PR Info and Prepare Tag
+        id: prepare_tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -35,21 +35,46 @@ jobs:
           PR_BODY=$(gh pr list --state merged --limit 1 --json body --jq '.[0].body')
           TAG_NAME=$(echo "$PR_TITLE" | sed 's/ /_/g') # Replace spaces with underscores in the tag name for consistency
 
+          echo "PR_TITLE=$PR_TITLE" >> $GITHUB_ENV
+          echo "PR_BODY=$PR_BODY" >> $GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+
+      - name: Check and Update Tag
+        id: update_tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
           # Check if the tag already exists
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Tag '$TAG_NAME' already exists. Exiting workflow."
-            echo "TAG_EXISTS=true" >> $GITHUB_ENV
-            exit 0
+            echo "Tag '$TAG_NAME' already exists. Deleting and recreating it."
+
+            # Delete the existing tag locally and remotely
+            git tag -d "$TAG_NAME"
+            git push --delete origin "$TAG_NAME"
+
+            # Create the updated tag
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
           else
-            echo "TAG_EXISTS=false" >> $GITHUB_ENV
-            echo "PR_TITLE: $PR_TITLE"
-            echo "PR_BODY: $PR_BODY"
-            echo "TAG_NAME: $TAG_NAME"
+            echo "Tag '$TAG_NAME' does not exist. Creating a new one."
 
             # Create the tag
             git tag "$TAG_NAME"
             git push origin "$TAG_NAME"
+          fi
 
-            # Create a release using GitHub CLI with the tag name and PR body
-            gh release create "$TAG_NAME" --title "$PR_TITLE" --notes "$PR_BODY"
+      - name: Create or Update Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if the release already exists
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Release for tag '$TAG_NAME' already exists. Updating it."
+            
+            # Delete and recreate the release
+            gh release delete "$TAG_NAME" -y
+            gh release create "$TAG_NAME" --title "${{ env.PR_TITLE }}" --notes "${{ env.PR_BODY }}"
+          else
+            echo "Release for tag '$TAG_NAME' does not exist. Creating a new one."
+            gh release create "$TAG_NAME" --title "${{ env.PR_TITLE }}" --notes "${{ env.PR_BODY }}"
           fi
