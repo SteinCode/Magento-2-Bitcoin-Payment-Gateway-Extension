@@ -4,6 +4,6 @@ use Magento\Framework\Component\ComponentRegistrar;
 
 ComponentRegistrar::register(
     ComponentRegistrar::MODULE,   
-    'Spectrocoin_Merchant',
+    'Spectrocointest_Merchanttest',
     __DIR__
 );
