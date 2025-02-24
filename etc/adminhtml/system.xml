@@ -16,7 +16,7 @@
                     <field id="order_payment_method" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0" canRestore="1">
                         <label>Order Payment Method</label>
                         <source_model>Spectrocoin\Merchant\Model\Adminhtml\Source\PaymentMethod</source_model>
-                        <comment>In case the fee is paid by the client, the fee amount will be added to the total price of the item/service. E.g item/service price is 100 USD and the fee is 0.5% then the client will pay 100.5 USD. You will receive the full item price – 100 USD. In case the fee is paid by you, the fee will be deducted from the total item price, hence you will receive 99.5 USD.</comment>
+                        <comment>In case the fee is paid by the client, the fee amount will be added to the total price of the item/service. E.g item/service price is 100 USD and the fee is 1% then the client will pay 101 USD. You will receive the full item price – 100 USD. In case the fee is paid by you, the fee will be deducted from the total item price, hence you will receive 99 USD.</comment>
                         <validate>required-entry</validate>
                     </field>
 
