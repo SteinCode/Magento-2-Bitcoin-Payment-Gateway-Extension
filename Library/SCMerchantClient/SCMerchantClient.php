@@ -52,9 +52,9 @@ class SCMerchantClient
         $this->http_client = new Client();
 
         $this->magento_object_manager = ObjectManager::getInstance();
-		$this->magento_config_writer = $magento_object_manager->get(WriterInterface::class);
-		$this->magento_scope_config = $magento_object_manager->get(ScopeConfigInterface::class);
-		$this->magento_encryptor = $magento_object_manager->get(EncryptorInterface::class);
+        $this->magento_config_writer = $this->magento_object_manager->get(WriterInterface::class);
+        $this->magento_scope_config = $this->magento_object_manager->get(ScopeConfigInterface::class);
+        $this->magento_encryptor = $this->magento_object_manager->get(EncryptorInterface::class);        
     }
 
     /**

@@ -94,8 +94,8 @@
                     <label>API settings</label>
                     <frontend_model>Magento\Config\Block\System\Config\Form\Fieldset</frontend_model>
 
-                    <field id="merchant_id" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="1" showInStore="0">
-                        <label>Merchant id</label>
+                    <field id="project_id" translate="label" type="text" sortOrder="4" showInDefault="1" showInWebsite="1" showInStore="0">
+                        <label>Project id</label>
                         <validate>required-entry</validate>
                     </field>
 

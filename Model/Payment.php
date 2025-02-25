@@ -63,7 +63,7 @@ class Payment extends AbstractMethod {
         );
 
         $this->sc_merchant_client = new SCMerchantClient(
-            $this->getConfigData('api_fields/merchant_id'),
+            $this->getConfigData('api_fields/project_id'),
             $this->getConfigData('api_fields/client_id'),
             $this->getConfigData('api_fields/client_secret')
         );
